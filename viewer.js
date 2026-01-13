@@ -150,11 +150,19 @@ class ImageViewer {
         img.style.opacity = '0';
         img.style.transition = 'opacity 0.3s ease';
         
+        const placeholder = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22600%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22800%22 height=%22600%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E이미지를 불러올 수 없습니다%3C/text%3E%3C/svg%3E';
+        
         // 이미지가 이미 로드되어 있으면 즉시 표시
         if (img.complete && img.src === product.img) {
             img.style.opacity = '1';
         } else {
-            img.src = product.img;
+            // BMP 파일이면 JPG로 변환 시도
+            let imgPath = product.img;
+            if (product.img.toLowerCase().endsWith('.bmp')) {
+                imgPath = product.img.replace(/\.bmp$/i, '.jpg');
+            }
+            
+            img.src = imgPath;
             img.alt = product.name;
             
             img.onload = () => {
@@ -162,8 +170,18 @@ class ImageViewer {
             };
 
             img.onerror = () => {
-                img.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22600%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22800%22 height=%22600%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E이미지를 불러올 수 없습니다%3C/text%3E%3C/svg%3E';
-                img.style.opacity = '1';
+                // JPG가 없으면 원본 BMP 시도 (BMP 파일인 경우)
+                if (imgPath !== product.img && product.img.toLowerCase().endsWith('.bmp')) {
+                    img.src = product.img;
+                    img.onerror = () => {
+                        img.src = placeholder;
+                        img.style.opacity = '1';
+                    };
+                } else {
+                    // BMP가 아니거나 원본도 실패하면 placeholder
+                    img.src = placeholder;
+                    img.style.opacity = '1';
+                }
             };
         }
     }

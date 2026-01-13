@@ -119,9 +119,12 @@ function shouldShow(p, filter, region) {
 
 function createCard(p) {
     const price2 = p.price2 ? ` / ${p.price2.toLocaleString()}원 ${p.unit2}` : '';
+    const placeholder = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22320%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22320%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E이미지 준비중%3C/text%3E%3C/svg%3E';
+    
     return `
         <div class="card" onclick="showProductViewer(${p.id})">
-            <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22320%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22320%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E이미지 준비중%3C/text%3E%3C/svg%3E'">
+            <img src="${p.img}" alt="${p.name}" loading="lazy" 
+                 onerror="handleImageError(this, '${p.img}', '${placeholder}')">
             <div class="info">
                 <span class="cat">${p.category}</span>
                 <h3>${p.name}</h3>
@@ -130,6 +133,30 @@ function createCard(p) {
             </div>
         </div>
     `;
+}
+
+// 이미지 에러 처리 함수
+function handleImageError(img, originalSrc, placeholder) {
+    // BMP 파일이면 JPG로 변환 시도
+    if (originalSrc.toLowerCase().endsWith('.bmp')) {
+        const jpgPath = originalSrc.replace(/\.bmp$/i, '.jpg');
+        img.onerror = null; // 에러 핸들러 초기화
+        img.src = jpgPath;
+        img.onerror = function() {
+            // JPG도 실패하면 원본 BMP 시도
+            this.onerror = null;
+            this.src = originalSrc;
+            this.onerror = function() {
+                // 모두 실패하면 placeholder
+                this.src = placeholder;
+                this.onerror = null;
+            };
+        };
+    } else {
+        // BMP가 아니면 바로 placeholder
+        img.src = placeholder;
+        img.onerror = null;
+    }
 }
 
 function filterProducts(filter) {
